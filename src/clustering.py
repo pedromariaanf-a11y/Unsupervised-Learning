@@ -1,6 +1,8 @@
 import pandas as pd
 from sklearn.manifold import TSNE
 from sklearn.metrics import calinski_harabasz_score, davies_bouldin_score, silhouette_score
+from sklearn.cluster import KMeans
+from sklearn.mixture import GaussianMixture
 
 
 def validate_clustering_input(df, id_column="customer_id"):
@@ -35,6 +37,23 @@ def get_cluster_summary(labels):
     return summary
 
 
+def sample_clustering_data(X, customer_ids=None, sample_size=5000, random_state=42):
+    sample_size = min(sample_size, len(X))
+    sample_indices = pd.Series(range(len(X))).sample(
+        n=sample_size,
+        random_state=random_state,
+    ).tolist()
+
+    X_sample = X.iloc[sample_indices].reset_index(drop=True)
+
+    if customer_ids is None:
+        return X_sample
+
+    sampled_customer_ids = pd.Series(customer_ids).iloc[sample_indices].reset_index(drop=True)
+
+    return X_sample, sampled_customer_ids
+
+
 def calculate_clustering_metrics(X, labels, sample_size=10000, random_state=42):
     sample_size = min(sample_size, len(X))
     cluster_summary = get_cluster_summary(labels)
@@ -53,6 +72,46 @@ def calculate_clustering_metrics(X, labels, sample_size=10000, random_state=42):
         "min_cluster_percentage": cluster_summary["percentage"].min(),
         "max_cluster_percentage": cluster_summary["percentage"].max(),
     }
+
+
+def fit_kmeans(X, n_clusters, random_state=42, n_init=50):
+    model = KMeans(n_clusters=n_clusters, random_state=random_state, n_init=n_init)
+    labels = model.fit_predict(X)
+
+    return model, labels
+
+
+def fit_gmm(X, n_components, covariance_type="diag", random_state=42):
+    model = GaussianMixture(
+        n_components=n_components,
+        covariance_type=covariance_type,
+        random_state=random_state,
+    )
+    model.fit(X)
+    labels = model.predict(X)
+
+    return model, labels
+
+
+def evaluate_clustering_solution(
+    X,
+    labels,
+    model_name,
+    algorithm,
+    n_clusters,
+    extra_metrics=None,
+):
+    metrics = calculate_clustering_metrics(X, labels)
+    metrics.update({
+        "model": model_name,
+        "algorithm": algorithm,
+        "n_clusters": n_clusters,
+    })
+
+    if extra_metrics is not None:
+        metrics.update(extra_metrics)
+
+    return metrics
 
 
 def create_cluster_profile(df, cluster_column="cluster", columns=None):

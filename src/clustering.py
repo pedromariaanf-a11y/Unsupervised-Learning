@@ -54,6 +54,26 @@ def calculate_clustering_metrics(X, labels, sample_size=10000, random_state=42):
     }
 
 
+def create_cluster_profile(df, cluster_column="cluster", columns=None):
+    if columns is None:
+        columns = df.select_dtypes(include="number").columns.tolist()
+        columns = [column for column in columns if column != cluster_column]
+    else:
+        columns = [
+            column
+            for column in columns
+            if column in df.columns and pd.api.types.is_numeric_dtype(df[column])
+        ]
+
+    profile = df.groupby(cluster_column)[columns].agg(["mean", "median"]).reset_index()
+    profile.columns = [
+        column if statistic == "" else f"{column}_{statistic}"
+        for column, statistic in profile.columns
+    ]
+
+    return profile
+
+
 def save_cluster_assignments(customer_ids, labels, output_path):
     assignments = pd.DataFrame({
         "customer_id": customer_ids,

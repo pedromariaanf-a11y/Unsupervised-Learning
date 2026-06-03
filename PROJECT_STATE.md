@@ -1,7 +1,7 @@
 # Project State
 
 - Project type: new project.
-- Completed work: initial repository scaffold created; project requirements reviewed; raw data files placed under `data/raw`; initial `customer_info` EDA notebook created.
-- Current phase: initial EDA in progress.
-- Recommended next task: add `customer_basket` EDA to `notebooks/01_initial_eda.ipynb`.
-- Known risks/issues: `loyalty_card_number` has many missing values and may be better as a flag later; `percentage_of_products_bought_promotion` has invalid negative values; `year_first_transaction` has suspicious future-looking values after 2026; all customers must be included in the final clustering output; `customer_basket` may not contain transactions for every customer; avoid overengineering.
+- Completed work: initial repository scaffold created; project requirements reviewed; raw data files placed under `data/raw`; initial EDA completed for `customer_info` and `customer_basket`; relationship validation completed; data quality decisions documented; customer_info feature engineering completed; `data/processed/customer_features_info.csv` created; customer_basket feature engineering completed; `data/processed/customer_features.csv` created.
+- Current phase: customer-level feature engineering complete for customer_info and customer_basket-derived features.
+- Recommended next task: preprocessing planning and data quality treatment.
+- Known risks/issues: `customer_features.csv` is an unscaled, interpretable intermediate feature table and is not model-ready; missing values and invalid values still need preprocessing decisions before clustering; `loyalty_card_number` is represented as `has_loyalty_card`, not kept raw; `customer_name` is excluded except for the simple `degree_level` prefix feature; `year_first_transaction` has future-looking values that can create negative tenure and must be handled before modelling; `percentage_of_products_bought_promotion` has invalid values that need treatment before modelling; `latitude` and `longitude` should be tested carefully because they can dominate distance-based clustering; basket features are based on sampled baskets only and customers without basket records are preserved with 0 numeric basket features and `No Basket` for `most_frequent_product`; final clustering must include every `customer_id`; avoid overengineering.

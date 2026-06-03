@@ -27,8 +27,7 @@ def add_customer_info_features(df):
     features = df.copy()
 
     transaction_year = pd.to_numeric(features["year_first_transaction"], errors="coerce")
-    plausible_transaction_years = transaction_year[transaction_year <= 2026]
-    reference_year = int(plausible_transaction_years.max())
+    reference_year = df["year_first_transaction"].max()
 
     birthdate = pd.to_datetime(
         features["customer_birthdate"],

@@ -1,4 +1,5 @@
 import pandas as pd
+from sklearn.manifold import TSNE
 from sklearn.metrics import calinski_harabasz_score, davies_bouldin_score, silhouette_score
 
 
@@ -72,6 +73,31 @@ def create_cluster_profile(df, cluster_column="cluster", columns=None):
     ]
 
     return profile
+
+
+def create_tsne_projection(X, labels, customer_ids=None, sample_size=5000, random_state=42):
+    sample_size = min(sample_size, len(X))
+    sample_indices = pd.Series(range(len(X))).sample(
+        n=sample_size,
+        random_state=random_state,
+    ).tolist()
+
+    X_sample = X.iloc[sample_indices]
+    sampled_labels = pd.Series(labels).iloc[sample_indices].reset_index(drop=True)
+
+    tsne = TSNE(n_components=2, random_state=random_state)
+    projection = tsne.fit_transform(X_sample)
+
+    tsne_df = pd.DataFrame({
+        "tsne_1": projection[:, 0],
+        "tsne_2": projection[:, 1],
+        "cluster": sampled_labels,
+    })
+
+    if customer_ids is not None:
+        tsne_df["customer_id"] = pd.Series(customer_ids).iloc[sample_indices].reset_index(drop=True)
+
+    return tsne_df
 
 
 def save_cluster_assignments(customer_ids, labels, output_path):

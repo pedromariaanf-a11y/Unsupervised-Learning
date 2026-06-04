@@ -1,0 +1,2 @@
+recommended_feature_set,recommended_k,reason,whether_current_feature_set_is_confirmed,closest_alternative,caveat
+compact_business_set,5,"compact_business_set has a stronger k=5 silhouette (0.141) than the current feature set (0.135), with similar cluster balance.",False,current k=5,"The improvement is modest and no cluster output was overwritten. k=6 for compact_business_set has silhouette 0.133, so it is not clearly better than k=5. Review whether excluding categorical dummies improves business interpretation before finalising."

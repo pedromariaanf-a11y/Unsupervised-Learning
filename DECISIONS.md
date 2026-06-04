@@ -47,4 +47,4 @@
 - Decision: Keep K-Means k=5 as the strongest practical candidate for the final customer segmentation model.
 - Reason: K-Means k=5 performed better than the tested GMM alternatives on the main internal metrics; it produced more usable cluster balance than the GMM models; Agglomerative Clustering did not outperform it; DBSCAN did not provide a stable multi-segment solution and is better treated as an outlier diagnostic.
 - Alternatives considered: GMM diagonal models with 4, 5, and 6 components; Agglomerative Clustering with 4, 5, and 6 clusters on a sample; DBSCAN with eps/min_samples grid on a sample.
-- Impact: The next modelling output should use K-Means k=5 to create the final `customer_clusters.csv`; basket data should be used after clustering for profiling, association rules, and promotion design; DBSCAN should not be used as the main segmentation output.
+- Impact: The final `outputs/customer_clusters.csv` uses K-Means k=5; basket data should be used after clustering for profiling, association rules, and promotion design; DBSCAN should not be used as the main segmentation output.

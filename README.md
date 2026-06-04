@@ -34,10 +34,19 @@ pip install -r requirements.txt
 ```text
 data/
   raw/
+    customer_info.csv
+    customer_basket.csv
   processed/
+    customer_features_info.csv
+    selected_model_features.csv
 notebooks/
 outputs/
-  figures/
+  customer_clusters.csv
+  kmeans_metrics.csv
+  kmeans_cluster_profile_summary.csv
+  kmeans_cluster_spending_shares.csv
+  model_comparison_metrics.csv
+  model_comparison_cluster_balance.csv
 src/
 README.md
 AGENTS.md

@@ -1,0 +1,3 @@
+feature_set,n_features,k,silhouette_score,calinski_harabasz_score,davies_bouldin_score,min_cluster_size,max_cluster_size,min_cluster_percentage,max_cluster_percentage,inertia
+current,25,5,0.1365581650157023,3650.8088411753197,2.108629694923937,2234,10841,6.76,32.81,478598.4685563724
+compact_business_set,20,5,0.1427932714684535,3841.553194942843,2.057096065933998,2233,10769,6.76,32.6,450976.0678040331

@@ -89,7 +89,7 @@ def parse_goods_list(value):
     if pd.isna(value):
         return []
 
-    parsed_value = ast.literal_eval(value)
+    parsed_value = ast.literal_eval(str(value))
     if isinstance(parsed_value, list):
         return parsed_value
 

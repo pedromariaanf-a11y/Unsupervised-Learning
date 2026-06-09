@@ -43,6 +43,13 @@ The locked segmentation model is:
 
 Basket data is used only after the final cluster assignment for basket profiling, association rules, and promotion recommendations. This avoids biasing the model toward customers with observed basket records.
 
+## Implementation Notes
+
+- Notebooks read data with direct `pd.read_csv` calls.
+- Reusable transformations, clustering helpers, basket profiling, association-rule logic, and promotion-table assembly live in `src/`.
+- Cluster persona names and promotion choices are analytical decisions and are kept in `notebooks/09_promotion_recommendations.ipynb`, not hardcoded inside reusable modules.
+- Outputs are saved as flat CSV files under `outputs/`; no nested output folders are required.
+
 ## Final Cluster Personas
 
 | Cluster | Persona |

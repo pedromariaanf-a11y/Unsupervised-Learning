@@ -68,3 +68,9 @@
 - Basket caveat: Basket analysis covers 28,127 of 33,038 clustered customers; customers without basket records remain in `outputs/customer_clusters.csv`.
 - Persona labels: cluster 0 is `Promo-Sensitive Older Tech Snackers`; cluster 1 is `Mainstream Grocery Families`; cluster 2 is `Vegetarian-Leaning Family Households`; cluster 3 is `Demanding Personal-Care and Tech Shoppers`; cluster 4 is `High-Value Large Loyal Families`.
 - Persona caveat: Persona names are business interpretations supported by model features and basket behaviour, not ground-truth labels. The informal `Karen-like` idea should be translated into the professional cluster 3 label in final materials.
+
+## 11. Implementation Hygiene
+
+- Decision: Keep reusable `.py` files focused on reusable functions and keep analytical/persona decisions inside notebooks.
+- Reason: The project guidelines ask for simple code, direct notebook reads, and `.py` files only for reusable logic.
+- Impact: Association rules are implemented as transparent pairwise support/confidence/lift calculations without an extra `mlxtend` dependency. Promotion recommendations are assembled by a reusable helper, but the actual persona and offer plan is defined in `09_promotion_recommendations.ipynb`.

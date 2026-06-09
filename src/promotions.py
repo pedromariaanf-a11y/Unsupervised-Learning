@@ -187,24 +187,44 @@ def create_cluster_top_products(basket_clusters, top_n=10):
     ]
 
 
-def format_itemset(itemset):
-    return " + ".join(sorted(itemset))
+ASSOCIATION_RULE_COLUMNS = [
+    "antecedents",
+    "consequents",
+    "antecedent_support",
+    "consequent_support",
+    "support",
+    "confidence",
+    "lift",
+    "leverage",
+    "conviction",
+]
+
+PROMOTION_PLAN_COLUMNS = [
+    "cluster",
+    "persona_name",
+    "persona_summary",
+    "recommended_promotion",
+    "promotion_type",
+    "products_to_promote",
+    "risk_or_caveat",
+]
+
+PROMOTION_OUTPUT_COLUMNS = [
+    "cluster",
+    "persona_name",
+    "persona_summary",
+    "main_evidence",
+    "recommended_promotion",
+    "promotion_type",
+    "products_to_promote",
+    "supporting_products",
+    "supporting_association_rules",
+    "risk_or_caveat",
+]
 
 
 def empty_association_rules_frame():
-    return pd.DataFrame(
-        columns=[
-            "antecedents",
-            "consequents",
-            "antecedent_support",
-            "consequent_support",
-            "support",
-            "confidence",
-            "lift",
-            "leverage",
-            "conviction",
-        ]
-    )
+    return pd.DataFrame(columns=ASSOCIATION_RULE_COLUMNS)
 
 
 def mine_pairwise_association_rules(
@@ -266,69 +286,7 @@ def mine_pairwise_association_rules(
     if not rule_rows:
         return empty_association_rules_frame()
 
-    return pd.DataFrame(rule_rows)
-
-
-def mine_association_rules(
-    basket_lists,
-    min_support=0.01,
-    min_confidence=0.15,
-    min_lift=1.2,
-    max_len=2,
-):
-    if max_len != 2:
-        raise ValueError("Only pairwise association rules are supported in this phase.")
-
-    transactions = [basket for basket in basket_lists if len(basket) > 0]
-    if not transactions:
-        return empty_association_rules_frame()
-
-    try:
-        from mlxtend.frequent_patterns import association_rules, fpgrowth
-        from mlxtend.preprocessing import TransactionEncoder
-
-        encoder = TransactionEncoder()
-        encoded_array = encoder.fit(transactions).transform(transactions)
-        encoded_baskets = pd.DataFrame(encoded_array, columns=encoder.columns_)
-
-        frequent_itemsets = fpgrowth(
-            encoded_baskets,
-            min_support=min_support,
-            use_colnames=True,
-            max_len=max_len,
-        )
-        if frequent_itemsets.empty:
-            return empty_association_rules_frame()
-
-        rules = association_rules(
-            frequent_itemsets,
-            metric="confidence",
-            min_threshold=min_confidence,
-        )
-        if rules.empty:
-            return empty_association_rules_frame()
-
-        rules = rules[rules["lift"] >= min_lift].copy()
-        if rules.empty:
-            return empty_association_rules_frame()
-
-        rules["antecedents"] = rules["antecedents"].apply(format_itemset)
-        rules["consequents"] = rules["consequents"].apply(format_itemset)
-        rules = rules.rename(
-            columns={
-                "antecedent support": "antecedent_support",
-                "consequent support": "consequent_support",
-            }
-        )
-
-        return rules
-    except Exception:
-        return mine_pairwise_association_rules(
-            transactions,
-            min_support=min_support,
-            min_confidence=min_confidence,
-            min_lift=min_lift,
-        )
+    return pd.DataFrame(rule_rows, columns=ASSOCIATION_RULE_COLUMNS)
 
 
 def create_cluster_association_rules(
@@ -336,7 +294,6 @@ def create_cluster_association_rules(
     min_support=0.01,
     min_confidence=0.15,
     min_lift=1.2,
-    max_len=2,
     top_n=20,
 ):
     rule_frames = []
@@ -347,12 +304,11 @@ def create_cluster_association_rules(
             "goods_list",
         ].tolist()
 
-        rules = mine_association_rules(
+        rules = mine_pairwise_association_rules(
             cluster_baskets,
             min_support=min_support,
             min_confidence=min_confidence,
             min_lift=min_lift,
-            max_len=max_len,
         )
         if rules.empty:
             continue
@@ -386,24 +342,11 @@ def create_cluster_association_rules(
 
     output_columns = [
         "cluster",
-        "antecedents",
-        "consequents",
-        "antecedent_support",
-        "consequent_support",
-        "support",
-        "confidence",
-        "lift",
-        "leverage",
-        "conviction",
+        *ASSOCIATION_RULE_COLUMNS,
         "rule_rank",
     ]
-    output_columns = [
-        column for column in output_columns
-        if column in cluster_rules.columns
-    ]
-    cluster_rules = cluster_rules[output_columns]
 
-    return cluster_rules
+    return cluster_rules[output_columns]
 
 
 def format_percentage(value):
@@ -422,6 +365,15 @@ def get_cluster_row(frame, cluster):
     return matching_rows.iloc[0]
 
 
+def normalize_terms(terms):
+    if terms is None:
+        return []
+    if isinstance(terms, str):
+        return [term.strip().lower() for term in terms.split(",") if term.strip()]
+
+    return [str(term).lower() for term in terms]
+
+
 def list_top_products(top_products, cluster, top_n=5, preferred_terms=None):
     cluster_products = (
         top_products.loc[top_products["cluster"] == cluster]
@@ -429,7 +381,7 @@ def list_top_products(top_products, cluster, top_n=5, preferred_terms=None):
     )
 
     if preferred_terms:
-        preferred_terms = [term.lower() for term in preferred_terms]
+        preferred_terms = normalize_terms(preferred_terms)
         product_text = cluster_products["product"].astype(str).str.lower()
         relevant_products = cluster_products.loc[
             product_text.apply(
@@ -451,7 +403,7 @@ def list_top_rules(association_rules, cluster, top_n=2, preferred_terms=None):
     )
 
     if preferred_terms:
-        preferred_terms = [term.lower() for term in preferred_terms]
+        preferred_terms = normalize_terms(preferred_terms)
         rule_text = (
             rules["antecedents"].astype(str)
             + " "
@@ -475,183 +427,74 @@ def list_top_rules(association_rules, cluster, top_n=2, preferred_terms=None):
     )
 
 
+def validate_promotion_plan(promotion_plan):
+    missing_columns = [
+        column for column in PROMOTION_PLAN_COLUMNS
+        if column not in promotion_plan.columns
+    ]
+    if missing_columns:
+        raise ValueError(f"Missing promotion plan columns: {missing_columns}")
+
+
+def create_cluster_evidence(cluster, cluster_profile, spending_shares, basket_profile):
+    cluster_metrics = get_cluster_row(cluster_profile, cluster)
+    share_metrics = get_cluster_row(spending_shares, cluster)
+    basket_metrics = get_cluster_row(basket_profile, cluster)
+
+    return (
+        f"Mean age {cluster_metrics.age_mean:.1f}; "
+        f"mean spend {format_number(cluster_metrics.total_lifetime_spend_mean)}; "
+        f"loyalty-card share {format_percentage(cluster_metrics.has_loyalty_card_mean)}; "
+        f"children at home {cluster_metrics.total_children_home_mean:.1f}; "
+        f"groceries {format_percentage(share_metrics.share_groceries)}, "
+        f"electronics {format_percentage(share_metrics.share_electronics)}, "
+        f"vegetables {format_percentage(share_metrics.share_vegetables)}, "
+        f"meat {format_percentage(share_metrics.share_meat)}, "
+        f"basket coverage "
+        f"{format_percentage(basket_metrics.share_of_cluster_customers_with_baskets)}."
+    )
+
+
+def get_optional_terms(row, column):
+    if column not in row.index:
+        return None
+
+    value = row[column]
+    if isinstance(value, (list, tuple, set)):
+        return list(value)
+    if value is None:
+        return None
+    if isinstance(value, float) and pd.isna(value):
+        return None
+
+    return value
+
+
 def create_cluster_promotion_recommendations(
+    promotion_plan,
     cluster_profile,
     spending_shares,
     basket_profile,
     top_products,
     association_rules,
 ):
-    promotion_plan = {
-        0: {
-            "persona_name": "Promo-Sensitive Older Tech Snackers",
-            "persona_summary": (
-                "Older, loyal customers with high promotion usage and visible "
-                "technology and snack signals."
-            ),
-            "recommended_promotion": (
-                "Offer a tech-accessory bundle paired with energy drinks or snack bars, "
-                "with a loyalty-card discount."
-            ),
-            "promotion_type": "Loyalty discount bundle",
-            "products_to_promote": (
-                "airpods, bluetooth headphones, energy drink, energy bar, protein bar"
-            ),
-            "risk_or_caveat": (
-                "Spend is lower than other mature segments, so keep discounts controlled."
-            ),
-            "product_terms": [
-                "airpods",
-                "bluetooth headphones",
-                "energy drink",
-                "energy bar",
-                "protein bar",
-                "laptop",
-            ],
-            "rule_terms": ["airpods", "bluetooth headphones", "energy drink"],
-        },
-        1: {
-            "persona_name": "Mainstream Grocery Families",
-            "persona_summary": (
-                "The broad main segment, dominated by grocery spend and family-oriented "
-                "fresh-food baskets."
-            ),
-            "recommended_promotion": (
-                "Use simple grocery and fresh-produce multi-buy offers for repeat basket "
-                "items."
-            ),
-            "promotion_type": "High-volume grocery offer",
-            "products_to_promote": (
-                "asparagus, tomatoes, spinach, carrots, avocado, salad"
-            ),
-            "risk_or_caveat": (
-                "This is the largest and broadest cluster, so promotions should stay general."
-            ),
-            "product_terms": [
-                "asparagus",
-                "tomatoes",
-                "spinach",
-                "carrots",
-                "avocado",
-                "salad",
-            ],
-            "rule_terms": ["salad", "avocado", "spinach", "carrots", "tomatoes"],
-        },
-        2: {
-            "persona_name": "Vegetarian-Leaning Family Households",
-            "persona_summary": (
-                "Family households with the strongest vegetable share and very low meat "
-                "and fish shares."
-            ),
-            "recommended_promotion": (
-                "Create a healthy family basket around vegetables, cooking basics, baby "
-                "items, and pet essentials."
-            ),
-            "promotion_type": "Lifestyle and family basket",
-            "products_to_promote": (
-                "asparagus, cooking oil, cereals, milk, babies food, dog food, cat food"
-            ),
-            "risk_or_caveat": (
-                "This is vegetarian-leaning, not strictly vegetarian, because some meat "
-                "products still appear."
-            ),
-            "product_terms": [
-                "asparagus",
-                "cooking oil",
-                "cereals",
-                "milk",
-                "babies food",
-                "dog food",
-                "cat food",
-                "napkins",
-            ],
-            "rule_terms": ["cooking oil", "napkins", "babies food", "dog food"],
-        },
-        3: {
-            "persona_name": "Demanding Personal-Care and Tech Shoppers",
-            "persona_summary": (
-                "Lower-loyalty customers with the highest complaints, strong personal-care "
-                "baskets, and the highest electronics share."
-            ),
-            "recommended_promotion": (
-                "Use a retention-focused personal-care replenishment bundle with optional "
-                "tech-accessory cross-sell."
-            ),
-            "promotion_type": "Retention and replenishment bundle",
-            "products_to_promote": (
-                "toothpaste, deodorant, shampoo, shower gel, tooth brush, airpods"
-            ),
-            "risk_or_caveat": (
-                "Use a professional label in the report; the informal Karen-like idea is "
-                "only an interpretation of complaints and product behaviour."
-            ),
-            "product_terms": [
-                "toothpaste",
-                "deodorant",
-                "shampoo",
-                "shower gel",
-                "tooth brush",
-                "airpods",
-            ],
-            "rule_terms": ["airpods", "bluetooth headphones", "laptop", "energy drink"],
-        },
-        4: {
-            "persona_name": "High-Value Large Loyal Families",
-            "persona_summary": (
-                "The highest-spending and most tenured family segment, with very large "
-                "households and breakfast/grocery baskets."
-            ),
-            "recommended_promotion": (
-                "Offer premium loyalty rewards and family breakfast bundles rather than "
-                "deep discounts."
-            ),
-            "promotion_type": "Premium loyalty family bundle",
-            "products_to_promote": (
-                "cereals, fresh bread, butter, eggs, milk, honey, tea"
-            ),
-            "risk_or_caveat": (
-                "High-value customers may not need heavy discounts; focus on retention and value."
-            ),
-            "product_terms": [
-                "cereals",
-                "fresh bread",
-                "butter",
-                "eggs",
-                "milk",
-                "honey",
-                "tea",
-                "bacon",
-            ],
-            "rule_terms": ["cereals", "fresh bread", "butter", "eggs", "honey", "bacon"],
-        },
-    }
+    validate_promotion_plan(promotion_plan)
 
     recommendation_rows = []
-    for cluster in sorted(promotion_plan):
-        cluster_metrics = get_cluster_row(cluster_profile, cluster)
-        share_metrics = get_cluster_row(spending_shares, cluster)
-        basket_metrics = get_cluster_row(basket_profile, cluster)
-        plan = promotion_plan[cluster]
-
-        evidence_summary = (
-            f"Mean age {cluster_metrics.age_mean:.1f}; "
-            f"mean spend {format_number(cluster_metrics.total_lifetime_spend_mean)}; "
-            f"loyalty-card share {format_percentage(cluster_metrics.has_loyalty_card_mean)}; "
-            f"children at home {cluster_metrics.total_children_home_mean:.1f}; "
-            f"groceries {format_percentage(share_metrics.share_groceries)}, "
-            f"electronics {format_percentage(share_metrics.share_electronics)}, "
-            f"vegetables {format_percentage(share_metrics.share_vegetables)}, "
-            f"meat {format_percentage(share_metrics.share_meat)}, "
-            f"basket coverage "
-            f"{format_percentage(basket_metrics.share_of_cluster_customers_with_baskets)}."
-        )
+    for _, plan in promotion_plan.sort_values("cluster").iterrows():
+        cluster = int(plan["cluster"])
 
         recommendation_rows.append(
             {
                 "cluster": cluster,
                 "persona_name": plan["persona_name"],
                 "persona_summary": plan["persona_summary"],
-                "main_evidence": evidence_summary,
+                "main_evidence": create_cluster_evidence(
+                    cluster,
+                    cluster_profile,
+                    spending_shares,
+                    basket_profile,
+                ),
                 "recommended_promotion": plan["recommended_promotion"],
                 "promotion_type": plan["promotion_type"],
                 "products_to_promote": plan["products_to_promote"],
@@ -659,16 +502,16 @@ def create_cluster_promotion_recommendations(
                     top_products,
                     cluster,
                     top_n=5,
-                    preferred_terms=plan["product_terms"],
+                    preferred_terms=get_optional_terms(plan, "product_terms"),
                 ),
                 "supporting_association_rules": list_top_rules(
                     association_rules,
                     cluster,
                     top_n=2,
-                    preferred_terms=plan["rule_terms"],
+                    preferred_terms=get_optional_terms(plan, "rule_terms"),
                 ),
                 "risk_or_caveat": plan["risk_or_caveat"],
             }
         )
 
-    return pd.DataFrame(recommendation_rows)
+    return pd.DataFrame(recommendation_rows, columns=PROMOTION_OUTPUT_COLUMNS)

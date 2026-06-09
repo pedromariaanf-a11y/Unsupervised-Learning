@@ -57,3 +57,14 @@
 - Basket policy: Basket data is excluded from clustering and used only after cluster assignment for basket profiling, association rules, and promotion design.
 - Caveat: `k=6` creates better cluster balance and splits the large `k=5` segment into two readable subgroups, but it has weaker internal metrics than `k=5`. Keep `k=5` as the metric-supported final model and document the `k=6` split as a business tradeoff.
 - Evidence notebooks: `06b_kmeans_robustness_decision.ipynb`, `06c_feature_set_decision.ipynb`, and `06d_final_preprocessing_decision.ipynb`.
+
+## 10. Final Reporting Narrative
+
+- Decision: Present the final model as a defensible business segmentation, not as a perfect geometric separation.
+- Reason: The final model balances internal metrics, interpretability, reproducibility, and downstream usefulness for basket profiling and promotions.
+- Model explanation: The final segmentation uses the compact business feature set, excludes gender and degree dummy columns, scales with `RobustScaler`, and fits `KMeans(n_clusters=5)`.
+- Basket explanation: Basket data is excluded from clustering because it is incomplete for 4,911 customers and could bias the segmentation toward observed purchase records. It is used only after clustering to understand baskets, association rules, and promotions.
+- Main limitation: The largest final cluster contains 18,385 customers, about 55.65% of the dataset. This should be described as a broad mainstream segment, not hidden as a modelling flaw.
+- Basket caveat: Basket analysis covers 28,127 of 33,038 clustered customers; customers without basket records remain in `outputs/customer_clusters.csv`.
+- Persona labels: cluster 0 is `Promo-Sensitive Older Tech Snackers`; cluster 1 is `Mainstream Grocery Families`; cluster 2 is `Vegetarian-Leaning Family Households`; cluster 3 is `Demanding Personal-Care and Tech Shoppers`; cluster 4 is `High-Value Large Loyal Families`.
+- Persona caveat: Persona names are business interpretations supported by model features and basket behaviour, not ground-truth labels. The informal `Karen-like` idea should be translated into the professional cluster 3 label in final materials.

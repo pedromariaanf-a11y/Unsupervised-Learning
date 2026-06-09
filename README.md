@@ -31,6 +31,30 @@ pip install -r requirements.txt
 10. Targeted promotions by cluster.
 11. Final report and `customer_clusters.csv`.
 
+## Final Model
+
+The locked segmentation model is:
+
+- compact business feature set;
+- no gender or degree dummy columns;
+- `RobustScaler`;
+- `KMeans(n_clusters=5, random_state=42, n_init=50)`;
+- basket data excluded from clustering.
+
+Basket data is used only after the final cluster assignment for basket profiling, association rules, and promotion recommendations. This avoids biasing the model toward customers with observed basket records.
+
+## Final Cluster Personas
+
+| Cluster | Persona |
+|---:|---|
+| 0 | Promo-Sensitive Older Tech Snackers |
+| 1 | Mainstream Grocery Families |
+| 2 | Vegetarian-Leaning Family Households |
+| 3 | Demanding Personal-Care and Tech Shoppers |
+| 4 | High-Value Large Loyal Families |
+
+The largest segment is cluster 1 with 18,385 customers, about 55.65% of the dataset. This should be described as a broad mainstream segment in the final report. Basket analysis covers 28,127 of 33,038 customers; customers without basket records remain in the final `customer_clusters.csv` output.
+
 ## Repository Structure
 
 ```text

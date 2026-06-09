@@ -55,4 +55,5 @@
 - Reason: The compact set removes gender and degree dummy columns, keeps the business-readable numeric customer features, and performed better than the previous scaled feature set during feature/scaler sensitivity checks.
 - Impact: `data/processed/selected_model_features.csv` should contain `customer_id` plus 20 compact model features; gender and degree dummy columns should not be included in the final clustering input; `outputs/customer_clusters.csv` should be regenerated from this final input.
 - Basket policy: Basket data is excluded from clustering and used only after cluster assignment for basket profiling, association rules, and promotion design.
+- Caveat: `k=6` creates better cluster balance and splits the large `k=5` segment into two readable subgroups, but it has weaker internal metrics than `k=5`. Keep `k=5` as the metric-supported final model and document the `k=6` split as a business tradeoff.
 - Evidence notebooks: `06b_kmeans_robustness_decision.ipynb`, `06c_feature_set_decision.ipynb`, and `06d_final_preprocessing_decision.ipynb`.

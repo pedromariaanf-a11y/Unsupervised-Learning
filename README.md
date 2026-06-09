@@ -51,6 +51,8 @@ notebooks/
   06b_kmeans_robustness_decision.ipynb
   06c_feature_set_decision.ipynb
   06d_final_preprocessing_decision.ipynb
+  07_basket_profiling.ipynb
+  08_association_rules_by_cluster.ipynb
 outputs/
   customer_clusters.csv
   kmeans_metrics.csv
@@ -61,8 +63,12 @@ outputs/
   segmentation_robustness_metrics.csv
   segmentation_seed_stability.csv
   segmentation_robustness_recommendation.csv
+  k5_k6_big_cluster_split_profile.csv
   feature_set_sensitivity_metrics.csv
   feature_set_sensitivity_recommendation.csv
+  cluster_basket_profile.csv
+  cluster_top_products.csv
+  cluster_association_rules.csv
 src/
 README.md
 AGENTS.md

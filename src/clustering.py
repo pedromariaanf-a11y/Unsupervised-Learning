@@ -1,5 +1,8 @@
+from itertools import combinations
+
 import pandas as pd
 from sklearn.manifold import TSNE
+from sklearn.metrics import adjusted_rand_score
 from sklearn.metrics import calinski_harabasz_score, davies_bouldin_score, silhouette_score
 from sklearn.cluster import KMeans
 from sklearn.mixture import GaussianMixture
@@ -79,6 +82,95 @@ def fit_kmeans(X, n_clusters, random_state=42, n_init=50):
     labels = model.fit_predict(X)
 
     return model, labels
+
+
+def evaluate_kmeans(X, k, random_state=42, n_init=50, sample_size=10000):
+    model, labels = fit_kmeans(
+        X,
+        n_clusters=k,
+        random_state=random_state,
+        n_init=n_init,
+    )
+    metrics = calculate_clustering_metrics(
+        X,
+        labels,
+        sample_size=sample_size,
+        random_state=random_state,
+    )
+    metrics.update({
+        "k": k,
+        "random_state": random_state,
+        "n_features": X.shape[1],
+        "inertia": model.inertia_,
+    })
+
+    return metrics, labels
+
+
+def compare_kmeans_k_values(X, k_values, random_state=42, n_init=50, sample_size=10000):
+    rows = []
+
+    for k in k_values:
+        metrics, _ = evaluate_kmeans(
+            X,
+            k=k,
+            random_state=random_state,
+            n_init=n_init,
+            sample_size=sample_size,
+        )
+        rows.append(metrics)
+
+    return pd.DataFrame(rows)
+
+
+def compare_kmeans_feature_sets(
+    feature_sets,
+    k=5,
+    random_state=42,
+    n_init=50,
+    sample_size=10000,
+):
+    rows = []
+
+    for variant, features in feature_sets.items():
+        metrics, _ = evaluate_kmeans(
+            features,
+            k=k,
+            random_state=random_state,
+            n_init=n_init,
+            sample_size=sample_size,
+        )
+        metrics["feature_set_variant"] = variant
+        rows.append(metrics)
+
+    return pd.DataFrame(rows)
+
+
+def calculate_seed_stability(X, k, seeds, n_init=50):
+    labels_by_seed = {}
+
+    for seed in seeds:
+        _, labels = evaluate_kmeans(
+            X,
+            k=k,
+            random_state=seed,
+            n_init=n_init,
+        )
+        labels_by_seed[seed] = labels
+
+    rows = []
+    for seed_a, seed_b in combinations(seeds, 2):
+        rows.append({
+            "k": k,
+            "seed_a": seed_a,
+            "seed_b": seed_b,
+            "adjusted_rand_index": adjusted_rand_score(
+                labels_by_seed[seed_a],
+                labels_by_seed[seed_b],
+            ),
+        })
+
+    return pd.DataFrame(rows)
 
 
 def fit_gmm(X, n_components, covariance_type="diag", random_state=42):

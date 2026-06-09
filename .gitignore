@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+outputs/clustering/
+outputs/figures/
+outputs/*.png
+outputs/association_rules*.csv

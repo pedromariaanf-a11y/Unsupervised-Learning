@@ -1,9 +1,31 @@
+import numpy as np
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import RobustScaler
 
 
 NON_MODEL_COLUMNS = ["most_frequent_product"]
-CATEGORICAL_COLUMNS = ["customer_gender", "degree_level"]
+FINAL_MODEL_COLUMNS = [
+    "number_complaints",
+    "distinct_stores_visited",
+    "lifetime_total_distinct_products",
+    "percentage_of_products_bought_promotion",
+    "typical_hour",
+    "age",
+    "customer_tenure",
+    "has_loyalty_card",
+    "total_children_home",
+    "total_lifetime_spend",
+    "share_groceries",
+    "share_electronics",
+    "share_vegetables",
+    "share_nonalcohol_drinks",
+    "share_alcohol_drinks",
+    "share_meat",
+    "share_fish",
+    "share_hygiene",
+    "share_videogames",
+    "share_petfood",
+]
 
 
 def clean_feature_values(df):
@@ -31,7 +53,17 @@ def clean_feature_values(df):
 def select_model_features(df):
     selected = df.copy()
     columns_to_drop = [column for column in NON_MODEL_COLUMNS if column in selected.columns]
-    return selected.drop(columns=columns_to_drop)
+    selected = selected.drop(columns=columns_to_drop)
+
+    required_columns = ["customer_id", *FINAL_MODEL_COLUMNS]
+    missing_columns = [
+        column for column in required_columns
+        if column not in selected.columns
+    ]
+    if missing_columns:
+        raise ValueError(f"Missing required model columns: {missing_columns}")
+
+    return selected[required_columns]
 
 
 def preprocess_for_clustering(df):
@@ -41,26 +73,43 @@ def preprocess_for_clustering(df):
     customer_ids = selected["customer_id"].copy()
     model_features = selected.drop(columns=["customer_id"])
 
-    categorical_columns = [
-        column for column in CATEGORICAL_COLUMNS if column in model_features.columns
-    ]
-    numeric_columns = model_features.drop(columns=categorical_columns).select_dtypes(
-        include="number"
-    ).columns
+    non_numeric_columns = model_features.select_dtypes(exclude="number").columns.tolist()
+    if non_numeric_columns:
+        raise ValueError(f"Non-numeric model columns found: {non_numeric_columns}")
 
-    encoded_features = pd.get_dummies(
-        model_features,
-        columns=categorical_columns,
-        drop_first=False,
-        dtype=int,
+    scaler = RobustScaler()
+    scaled_features = model_features.copy()
+    scaled_features[FINAL_MODEL_COLUMNS] = scaler.fit_transform(
+        scaled_features[FINAL_MODEL_COLUMNS]
     )
 
-    scaler = StandardScaler()
-    encoded_features[numeric_columns] = scaler.fit_transform(
-        encoded_features[numeric_columns]
-    )
-
-    preprocessed = encoded_features.copy()
+    preprocessed = scaled_features.copy()
     preprocessed.insert(0, "customer_id", customer_ids.values)
 
     return preprocessed
+
+
+def scale_model_features(df, feature_columns=None, scaler=None, use_log=False):
+    if feature_columns is None:
+        feature_columns = FINAL_MODEL_COLUMNS
+    if scaler is None:
+        scaler = RobustScaler()
+
+    missing_columns = [
+        column for column in feature_columns
+        if column not in df.columns
+    ]
+    if missing_columns:
+        raise ValueError(f"Missing required feature columns: {missing_columns}")
+
+    features = df[feature_columns].copy()
+    if use_log:
+        features = np.log1p(features.clip(lower=0))
+
+    scaled_features = pd.DataFrame(
+        scaler.fit_transform(features),
+        columns=feature_columns,
+        index=df.index,
+    )
+
+    return scaled_features

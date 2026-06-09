@@ -1,4 +1,2 @@
-candidate,evidence_for,evidence_against,recommendation
-K-Means k=4,"Minimum cluster share is 9.0%, so no segment is tiny.","Silhouette is 0.239 and Davies-Bouldin is 1.584, weaker than k=5.",Not preferred; useful as a simpler fallback only.
-K-Means k=5,Best baseline silhouette at 0.221; largest cluster share is 55.6%; mean seed ARI is 1.000.,"Smallest cluster share is 7.9%, so one segment is relatively small and needs business interpretation.","Still supported as the practical final candidate, with k=6 noted as the closest alternative."
-K-Means k=6,"Largest cluster share falls to 30.0% and seed stability is very high, with mean ARI 0.999.",Silhouette falls to 0.152 and Calinski-Harabasz is lower than k=5.,"Worth reviewing in the final discussion, but not enough evidence to replace k=5 now."
+candidate,evidence_for,evidence_against,seed_stability,recommendation
+KMeans_k5_compact_robust,"k=5 gives five usable segments with silhouette 0.221, Davies-Bouldin 1.539, and minimum cluster share 7.93%.",The largest cluster is broad at 55.65% of customers; k=2 and k=3 have stronger separation metrics but are less useful for action.,"ARI range 0.998 to 1.000, mean 0.999.",Keep K-Means k=5 as the final segmentation level.

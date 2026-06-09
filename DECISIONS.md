@@ -39,7 +39,7 @@
 ## 7. First K-Means Input
 
 - Decision: Use `data/processed/selected_model_features.csv` as the input for the first K-Means baseline.
-- Reason: It is scaled, encoded, compact, and excludes risky or redundant first-baseline features.
+- Reason: It is scaled, compact, and excludes risky or redundant first-baseline features.
 - Impact: The next phase can focus on clustering baseline design and evaluation without revisiting feature selection first.
 
 ## 8. Model Candidate After Comparison
@@ -48,3 +48,11 @@
 - Reason: K-Means k=5 performed better than the tested GMM alternatives on the main internal metrics; it produced more usable cluster balance than the GMM models; Agglomerative Clustering did not outperform it; DBSCAN did not provide a stable multi-segment solution and is better treated as an outlier diagnostic.
 - Alternatives considered: GMM diagonal models with 4, 5, and 6 components; Agglomerative Clustering with 4, 5, and 6 clusters on a sample; DBSCAN with eps/min_samples grid on a sample.
 - Impact: The final `outputs/customer_clusters.csv` uses K-Means k=5; basket data should be used after clustering for profiling, association rules, and promotion design; DBSCAN should not be used as the main segmentation output.
+
+## 9. Final Segmentation Model
+
+- Decision: Use the compact business feature set with `RobustScaler` and `KMeans(n_clusters=5, random_state=42, n_init=50)` as the final segmentation model.
+- Reason: The compact set removes gender and degree dummy columns, keeps the business-readable numeric customer features, and performed better than the previous scaled feature set during feature/scaler sensitivity checks.
+- Impact: `data/processed/selected_model_features.csv` should contain `customer_id` plus 20 compact model features; gender and degree dummy columns should not be included in the final clustering input; `outputs/customer_clusters.csv` should be regenerated from this final input.
+- Basket policy: Basket data is excluded from clustering and used only after cluster assignment for basket profiling, association rules, and promotion design.
+- Evidence notebooks: `06b_kmeans_robustness_decision.ipynb`, `06c_feature_set_decision.ipynb`, and `06d_final_preprocessing_decision.ipynb`.

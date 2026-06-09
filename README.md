@@ -28,7 +28,7 @@ pip install -r requirements.txt
 7. Model comparison and robustness checks.
 8. Basket profiling by final cluster.
 9. Association rules by cluster.
-10. Targeted promotions.
+10. Targeted promotions by cluster.
 11. Final report and `customer_clusters.csv`.
 
 ## Repository Structure
@@ -53,6 +53,7 @@ notebooks/
   06d_final_preprocessing_decision.ipynb
   07_basket_profiling.ipynb
   08_association_rules_by_cluster.ipynb
+  09_promotion_recommendations.ipynb
 outputs/
   customer_clusters.csv
   kmeans_metrics.csv
@@ -69,6 +70,7 @@ outputs/
   cluster_basket_profile.csv
   cluster_top_products.csv
   cluster_association_rules.csv
+  cluster_promotion_recommendations.csv
 src/
 README.md
 AGENTS.md

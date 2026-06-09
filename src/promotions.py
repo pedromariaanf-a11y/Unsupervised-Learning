@@ -404,3 +404,271 @@ def create_cluster_association_rules(
     cluster_rules = cluster_rules[output_columns]
 
     return cluster_rules
+
+
+def format_percentage(value):
+    return f"{value:.1%}"
+
+
+def format_number(value):
+    return f"{value:,.0f}"
+
+
+def get_cluster_row(frame, cluster):
+    matching_rows = frame.loc[frame["cluster"] == cluster]
+    if matching_rows.empty:
+        raise ValueError(f"Cluster {cluster} was not found.")
+
+    return matching_rows.iloc[0]
+
+
+def list_top_products(top_products, cluster, top_n=5, preferred_terms=None):
+    cluster_products = (
+        top_products.loc[top_products["cluster"] == cluster]
+        .sort_values("product_rank")
+    )
+
+    if preferred_terms:
+        preferred_terms = [term.lower() for term in preferred_terms]
+        product_text = cluster_products["product"].astype(str).str.lower()
+        relevant_products = cluster_products.loc[
+            product_text.apply(
+                lambda text: any(term in text for term in preferred_terms)
+            )
+        ]
+        if not relevant_products.empty:
+            cluster_products = relevant_products
+
+    products = cluster_products.head(top_n)["product"].tolist()
+
+    return ", ".join(products)
+
+
+def list_top_rules(association_rules, cluster, top_n=2, preferred_terms=None):
+    rules = (
+        association_rules.loc[association_rules["cluster"] == cluster]
+        .sort_values("rule_rank")
+    )
+
+    if preferred_terms:
+        preferred_terms = [term.lower() for term in preferred_terms]
+        rule_text = (
+            rules["antecedents"].astype(str)
+            + " "
+            + rules["consequents"].astype(str)
+        ).str.lower()
+        relevant_rules = rules.loc[
+            rule_text.apply(
+                lambda text: any(term in text for term in preferred_terms)
+            )
+        ]
+        if not relevant_rules.empty:
+            rules = relevant_rules
+
+    rules = rules.head(top_n)
+    if rules.empty:
+        return "No strong pairwise rules saved."
+
+    return "; ".join(
+        f"{row.antecedents} -> {row.consequents} (lift {row.lift:.2f})"
+        for row in rules.itertuples(index=False)
+    )
+
+
+def create_cluster_promotion_recommendations(
+    cluster_profile,
+    spending_shares,
+    basket_profile,
+    top_products,
+    association_rules,
+):
+    promotion_plan = {
+        0: {
+            "persona_name": "Promo-Sensitive Older Tech Snackers",
+            "persona_summary": (
+                "Older, loyal customers with high promotion usage and visible "
+                "technology and snack signals."
+            ),
+            "recommended_promotion": (
+                "Offer a tech-accessory bundle paired with energy drinks or snack bars, "
+                "with a loyalty-card discount."
+            ),
+            "promotion_type": "Loyalty discount bundle",
+            "products_to_promote": (
+                "airpods, bluetooth headphones, energy drink, energy bar, protein bar"
+            ),
+            "risk_or_caveat": (
+                "Spend is lower than other mature segments, so keep discounts controlled."
+            ),
+            "product_terms": [
+                "airpods",
+                "bluetooth headphones",
+                "energy drink",
+                "energy bar",
+                "protein bar",
+                "laptop",
+            ],
+            "rule_terms": ["airpods", "bluetooth headphones", "energy drink"],
+        },
+        1: {
+            "persona_name": "Mainstream Grocery Families",
+            "persona_summary": (
+                "The broad main segment, dominated by grocery spend and family-oriented "
+                "fresh-food baskets."
+            ),
+            "recommended_promotion": (
+                "Use simple grocery and fresh-produce multi-buy offers for repeat basket "
+                "items."
+            ),
+            "promotion_type": "High-volume grocery offer",
+            "products_to_promote": (
+                "asparagus, tomatoes, spinach, carrots, avocado, salad"
+            ),
+            "risk_or_caveat": (
+                "This is the largest and broadest cluster, so promotions should stay general."
+            ),
+            "product_terms": [
+                "asparagus",
+                "tomatoes",
+                "spinach",
+                "carrots",
+                "avocado",
+                "salad",
+            ],
+            "rule_terms": ["salad", "avocado", "spinach", "carrots", "tomatoes"],
+        },
+        2: {
+            "persona_name": "Vegetarian-Leaning Family Households",
+            "persona_summary": (
+                "Family households with the strongest vegetable share and very low meat "
+                "and fish shares."
+            ),
+            "recommended_promotion": (
+                "Create a healthy family basket around vegetables, cooking basics, baby "
+                "items, and pet essentials."
+            ),
+            "promotion_type": "Lifestyle and family basket",
+            "products_to_promote": (
+                "asparagus, cooking oil, cereals, milk, babies food, dog food, cat food"
+            ),
+            "risk_or_caveat": (
+                "This is vegetarian-leaning, not strictly vegetarian, because some meat "
+                "products still appear."
+            ),
+            "product_terms": [
+                "asparagus",
+                "cooking oil",
+                "cereals",
+                "milk",
+                "babies food",
+                "dog food",
+                "cat food",
+                "napkins",
+            ],
+            "rule_terms": ["cooking oil", "napkins", "babies food", "dog food"],
+        },
+        3: {
+            "persona_name": "Demanding Personal-Care and Tech Shoppers",
+            "persona_summary": (
+                "Lower-loyalty customers with the highest complaints, strong personal-care "
+                "baskets, and the highest electronics share."
+            ),
+            "recommended_promotion": (
+                "Use a retention-focused personal-care replenishment bundle with optional "
+                "tech-accessory cross-sell."
+            ),
+            "promotion_type": "Retention and replenishment bundle",
+            "products_to_promote": (
+                "toothpaste, deodorant, shampoo, shower gel, tooth brush, airpods"
+            ),
+            "risk_or_caveat": (
+                "Use a professional label in the report; the informal Karen-like idea is "
+                "only an interpretation of complaints and product behaviour."
+            ),
+            "product_terms": [
+                "toothpaste",
+                "deodorant",
+                "shampoo",
+                "shower gel",
+                "tooth brush",
+                "airpods",
+            ],
+            "rule_terms": ["airpods", "bluetooth headphones", "laptop", "energy drink"],
+        },
+        4: {
+            "persona_name": "High-Value Large Loyal Families",
+            "persona_summary": (
+                "The highest-spending and most tenured family segment, with very large "
+                "households and breakfast/grocery baskets."
+            ),
+            "recommended_promotion": (
+                "Offer premium loyalty rewards and family breakfast bundles rather than "
+                "deep discounts."
+            ),
+            "promotion_type": "Premium loyalty family bundle",
+            "products_to_promote": (
+                "cereals, fresh bread, butter, eggs, milk, honey, tea"
+            ),
+            "risk_or_caveat": (
+                "High-value customers may not need heavy discounts; focus on retention and value."
+            ),
+            "product_terms": [
+                "cereals",
+                "fresh bread",
+                "butter",
+                "eggs",
+                "milk",
+                "honey",
+                "tea",
+                "bacon",
+            ],
+            "rule_terms": ["cereals", "fresh bread", "butter", "eggs", "honey", "bacon"],
+        },
+    }
+
+    recommendation_rows = []
+    for cluster in sorted(promotion_plan):
+        cluster_metrics = get_cluster_row(cluster_profile, cluster)
+        share_metrics = get_cluster_row(spending_shares, cluster)
+        basket_metrics = get_cluster_row(basket_profile, cluster)
+        plan = promotion_plan[cluster]
+
+        evidence_summary = (
+            f"Mean age {cluster_metrics.age_mean:.1f}; "
+            f"mean spend {format_number(cluster_metrics.total_lifetime_spend_mean)}; "
+            f"loyalty-card share {format_percentage(cluster_metrics.has_loyalty_card_mean)}; "
+            f"children at home {cluster_metrics.total_children_home_mean:.1f}; "
+            f"groceries {format_percentage(share_metrics.share_groceries)}, "
+            f"electronics {format_percentage(share_metrics.share_electronics)}, "
+            f"vegetables {format_percentage(share_metrics.share_vegetables)}, "
+            f"meat {format_percentage(share_metrics.share_meat)}, "
+            f"basket coverage "
+            f"{format_percentage(basket_metrics.share_of_cluster_customers_with_baskets)}."
+        )
+
+        recommendation_rows.append(
+            {
+                "cluster": cluster,
+                "persona_name": plan["persona_name"],
+                "persona_summary": plan["persona_summary"],
+                "main_evidence": evidence_summary,
+                "recommended_promotion": plan["recommended_promotion"],
+                "promotion_type": plan["promotion_type"],
+                "products_to_promote": plan["products_to_promote"],
+                "supporting_products": list_top_products(
+                    top_products,
+                    cluster,
+                    top_n=5,
+                    preferred_terms=plan["product_terms"],
+                ),
+                "supporting_association_rules": list_top_rules(
+                    association_rules,
+                    cluster,
+                    top_n=2,
+                    preferred_terms=plan["rule_terms"],
+                ),
+                "risk_or_caveat": plan["risk_or_caveat"],
+            }
+        )
+
+    return pd.DataFrame(recommendation_rows)

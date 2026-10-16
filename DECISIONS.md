@@ -67,7 +67,7 @@
 - Main limitation: The largest final cluster contains 18,385 customers, about 55.65% of the dataset. This should be described as a broad mainstream segment, not hidden as a modelling flaw.
 - Basket caveat: Basket analysis covers 28,127 of 33,038 clustered customers; customers without basket records remain in `outputs/customer_clusters.csv`.
 - Persona labels: cluster 0 is `Promo-Sensitive Older Tech Snackers`; cluster 1 is `Mainstream Grocery Families`; cluster 2 is `Vegetarian-Leaning Family Households`; cluster 3 is `Demanding Personal-Care and Tech Shoppers`; cluster 4 is `High-Value Large Loyal Families`.
-- Persona caveat: Persona names are business interpretations supported by model features and basket behaviour, not ground-truth labels. The informal `Karen-like` idea should be translated into the professional cluster 3 label in final materials.
+- Persona caveat: Persona names are business interpretations supported by model features and basket behaviour, not ground-truth labels.
 
 ## 11. Implementation Hygiene
 

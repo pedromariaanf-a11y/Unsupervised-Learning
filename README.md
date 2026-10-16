@@ -1,15 +1,70 @@
-# Customer Segmentation
+# Customer Segmentation — Unsupervised Learning
 
-## Objective
+End-to-end retail customer segmentation using **K-Means clustering** on 33,038 customers, enriched with basket analysis, association rules, and targeted promotion recommendations.
 
-Build a customer segmentation workflow that identifies meaningful customer groups, analyzes their behavior, proposes targeted promotions, and produces a final `customer_clusters.csv` with every `customer_id` and its assigned cluster.
+---
 
-## Datasets
+## Overview
 
-- `customer_info.csv`: customer-level information.
-- `customer_basket.csv`: basket and transaction-level information.
+| Item | Detail |
+|---|---|
+| **Dataset** | 33,038 customers · 28,127 with basket records |
+| **Model** | `KMeans(n_clusters=5, random_state=42, n_init=50)` |
+| **Scaler** | `RobustScaler` |
+| **Feature set** | 20 compact business features (demographic + behavioural spend shares) |
+| **Metrics** | Silhouette 0.2208 · Calinski-Harabasz 6,347 · Davies-Bouldin 1.54 |
 
-Raw datasets should be inspected before modelling and should not be modified directly.
+---
+
+## Customer Segments
+
+| Cluster | Persona | Customers | Share |
+|:---:|---|---:|---:|
+| 0 | Promo-Sensitive Older Tech Snackers | 2,619 | 7.9% |
+| 1 | Mainstream Grocery Families | 18,385 | 55.6% |
+| 2 | Vegetarian-Leaning Family Households | 5,538 | 16.8% |
+| 3 | Demanding Personal-Care and Tech Shoppers | 3,552 | 10.8% |
+| 4 | High-Value Large Loyal Families | 2,944 | 8.9% |
+
+---
+
+## Pipeline
+
+```
+Raw data → EDA → Feature Engineering → Preprocessing
+       → K-Means baseline → Model comparison (KMeans / GMM / Agglomerative / DBSCAN)
+       → Robustness & feature-set sensitivity checks → Final model
+       → Basket profiling → Association rules → Promotion recommendations
+```
+
+**Notebooks run in order:**
+
+| # | Notebook | Purpose |
+|---|---|---|
+| 01 | `01_initial_eda.ipynb` | Exploratory analysis of raw data |
+| 02 | `02_feature_engineering.ipynb` | Build customer-level feature table |
+| 03 | `03_preprocessing.ipynb` | Scale and select final model features |
+| 04 | `04_advanced_eda_feature_selection.ipynb` | Feature selection analysis |
+| 05 | `05_kmeans_baseline.ipynb` | K-Means sweep k=2..8, elbow + metrics |
+| 06 | `06_model_comparison.ipynb` | KMeans vs GMM vs Agglomerative vs DBSCAN |
+| 06b | `06b_kmeans_robustness_decision.ipynb` | Seed-stability ARI check |
+| 06c | `06c_feature_set_decision.ipynb` | Compact vs full feature-set sensitivity |
+| 06d | `06d_final_preprocessing_decision.ipynb` | Scaler sensitivity (Robust / Standard / Log) |
+| 07 | `07_basket_profiling.ipynb` | Post-cluster basket profiling |
+| 08 | `08_association_rules_by_cluster.ipynb` | Pairwise association rules per cluster |
+| 09 | `09_promotion_recommendations.ipynb` | Targeted promotions per persona |
+
+---
+
+## Key Design Decisions
+
+- **Basket data excluded from clustering** — 4,911 customers have no basket records; zero values would mean "not observed", not true zero behaviour. Basket data is used only *after* cluster assignment for profiling and promotions.
+- **Compact feature set** — gender and degree dummy columns were removed after feature-set sensitivity analysis showed the 20 numeric business features produce better-separated clusters.
+- **k=5 vs k=6** — k=6 splits the large mainstream cluster into two readable subgroups but has weaker internal metrics. k=5 is kept as the metric-supported final model; the k=6 split is documented as a business tradeoff.
+
+See [`DECISIONS.md`](DECISIONS.md) for the full decision trail.
+
+---
 
 ## Setup
 
@@ -17,76 +72,23 @@ Raw datasets should be inspected before modelling and should not be modified dir
 pip install -r requirements.txt
 ```
 
-## Expected Flow
+**Requirements:** `pandas` · `numpy` · `matplotlib` · `seaborn` · `scikit-learn`
 
-1. Initial EDA.
-2. Feature engineering.
-3. Preprocessing with the final compact RobustScaler feature set.
-4. Advanced EDA with insights.
-5. Feature selection / feature set design.
-6. Final K-Means modelling.
-7. Model comparison and robustness checks.
-8. Basket profiling by final cluster.
-9. Association rules by cluster.
-10. Targeted promotions by cluster.
-11. Final report and `customer_clusters.csv`.
-
-## Final Model
-
-The locked segmentation model is:
-
-- compact business feature set;
-- no gender or degree dummy columns;
-- `RobustScaler`;
-- `KMeans(n_clusters=5, random_state=42, n_init=50)`;
-- basket data excluded from clustering.
-
-Basket data is used only after the final cluster assignment for basket profiling, association rules, and promotion recommendations. This avoids biasing the model toward customers with observed basket records.
-
-## Implementation Notes
-
-- Notebooks read data with direct `pd.read_csv` calls.
-- Reusable transformations, clustering helpers, basket profiling, association-rule logic, and promotion-table assembly live in `src/`.
-- Cluster persona names and promotion choices are analytical decisions and are kept in `notebooks/09_promotion_recommendations.ipynb`, not hardcoded inside reusable modules.
-- Outputs are saved as flat CSV files under `outputs/`; no nested output folders are required.
-
-## Final Cluster Personas
-
-| Cluster | Persona |
-|---:|---|
-| 0 | Promo-Sensitive Older Tech Snackers |
-| 1 | Mainstream Grocery Families |
-| 2 | Vegetarian-Leaning Family Households |
-| 3 | Demanding Personal-Care and Tech Shoppers |
-| 4 | High-Value Large Loyal Families |
-
-The largest segment is cluster 1 with 18,385 customers, about 55.65% of the dataset. This should be described as a broad mainstream segment in the final report. Basket analysis covers 28,127 of 33,038 customers; customers without basket records remain in the final `customer_clusters.csv` output.
+---
 
 ## Repository Structure
 
 ```text
 data/
   raw/
-    customer_info.csv
-    customer_basket.csv
+    customer_info.csv          ← raw customer demographics + behaviour
+    customer_basket.csv        ← transaction-level basket records
   processed/
-    customer_features_info.csv
-    selected_model_features.csv
-notebooks/
-  01_initial_eda.ipynb
-  02_feature_engineering.ipynb
-  03_preprocessing.ipynb
-  04_advanced_eda_feature_selection.ipynb
-  05_kmeans_baseline.ipynb
-  06_model_comparison.ipynb
-  06b_kmeans_robustness_decision.ipynb
-  06c_feature_set_decision.ipynb
-  06d_final_preprocessing_decision.ipynb
-  07_basket_profiling.ipynb
-  08_association_rules_by_cluster.ipynb
-  09_promotion_recommendations.ipynb
+    customer_features_info.csv ← engineered customer feature table
+    selected_model_features.csv← final scaled model input (33,038 × 21)
+notebooks/                     ← numbered pipeline notebooks (run in order)
 outputs/
-  customer_clusters.csv
+  customer_clusters.csv        ← final deliverable: customer_id + cluster
   kmeans_metrics.csv
   kmeans_cluster_profile_summary.csv
   kmeans_cluster_spending_shares.csv
@@ -103,8 +105,11 @@ outputs/
   cluster_association_rules.csv
   cluster_promotion_recommendations.csv
 src/
-README.md
-AGENTS.md
-PROJECT_STATE.md
+  clustering.py    ← KMeans/GMM fitting, metrics, seed stability, t-SNE
+  features.py      ← customer info + basket feature engineering
+  preprocessing.py ← cleaning, feature selection, RobustScaler pipeline
+  promotions.py    ← basket profiling, association rules, promotion tables
+report.md          ← full narrative project report
+DECISIONS.md       ← documented analytical decision trail
 requirements.txt
 ```

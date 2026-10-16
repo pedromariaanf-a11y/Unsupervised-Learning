@@ -117,7 +117,7 @@ Using post-clustering basket profiling and pairwise association rules (support, 
 
 ## Technologies Used
 
-- **Python 3.13**
+- **Python 3.12** (recommended for package compatibility)
 - **Data processing:** `pandas`, `numpy`, `scipy`
 - **Machine Learning:** `scikit-learn` (K-Means, GMM, Agglomerative Clustering, DBSCAN, RobustScaler)
 - **Visualisation:** `matplotlib`, `seaborn`
@@ -165,12 +165,63 @@ Exact package versions are recorded in [`requirements.txt`](requirements.txt).
 
 ## Reproducing the Analysis
 
-1. Clone the repository and install requirements:
-   ```bash
-   pip install -r requirements.txt
-   ```
-2. The notebooks are structured sequentially from `01` to `09` (including intermediate decision notebooks `06b`, `06c`, and `06d`). Each notebook reads directly from `data/` or `outputs/` and writes corresponding flat artifacts to `outputs/`.
-3. Pre-computed outputs and intermediate tables are committed, allowing independent exploration of any individual notebook.
+### 1. Environment Setup
+
+Clone the repository and create a virtual environment using **Python 3.12**:
+
+**macOS / Linux:**
+```bash
+git clone https://github.com/pedromariaanf-a11y/Unsupervised-Learning.git
+cd Unsupervised-Learning
+
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+pip install jupyterlab
+```
+
+**Windows (PowerShell):**
+```powershell
+git clone https://github.com/pedromariaanf-a11y/Unsupervised-Learning.git
+cd Unsupervised-Learning
+
+py -3.12 -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+pip install jupyterlab
+```
+
+### 2. Launching JupyterLab
+
+Launch JupyterLab from the **repository root directory**:
+
+```bash
+jupyter lab
+```
+
+> **Working Directory Note:** The notebooks use relative paths such as `../data/`, `../src/`, and `../outputs/`. When JupyterLab is launched from the repository root and you open any notebook inside `notebooks/`, Jupyter automatically sets that notebook kernel's working directory to `notebooks/`, allowing all relative paths to resolve correctly without manual adjustments.
+
+### 3. Notebook Execution Order
+
+The notebooks are designed to be run sequentially from `01` through `09`:
+
+1. `01_initial_eda.ipynb`
+2. `02_feature_engineering.ipynb`
+3. `03_preprocessing.ipynb`
+4. `04_advanced_eda_feature_selection.ipynb`
+5. `05_kmeans_baseline.ipynb`
+6. `06_model_comparison.ipynb`
+7. `06b_kmeans_robustness_decision.ipynb`
+8. `06c_feature_set_decision.ipynb`
+9. `06d_final_preprocessing_decision.ipynb`
+10. `07_basket_profiling.ipynb`
+11. `08_association_rules_by_cluster.ipynb`
+12. `09_promotion_recommendations.ipynb`
+
+### Notes on Execution and Precomputed Outputs
+
+- **Computation time:** Most notebooks execute in under a minute, but cells computing t-SNE projections (such as in `05_kmeans_baseline.ipynb`) and distance-based sample diagnostics take noticeably longer to complete.
+- **Precomputed outputs:** All engineered feature tables (`data/processed/`), final cluster assignments, metrics, and profiles (`outputs/`) are committed to the repository. You can explore individual notebooks and inspect results without needing to re-run the full pipeline from scratch.
 
 ---
 
